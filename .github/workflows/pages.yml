@@ -1,0 +1,66 @@
+# Deploys the site to GitHub Pages: master at the root (emptyskies.com, unchanged),
+# plus every open same-repo pull request at /pr-preview/pr-<number>/.
+# pull_request_target runs this file from master and only copies the PR's static files; nothing from the PR is executed.
+name: pages
+
+on:
+  push:
+    branches: [master]
+  pull_request_target:
+    types: [opened, reopened, synchronize, closed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          path: _site
+
+      - name: Add open pull request previews
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf _site/.git _site/.github
+          git init -q src
+          git -C src remote add origin "https://github.com/$GITHUB_REPOSITORY"
+          for n in $(gh pr list -R "$GITHUB_REPOSITORY" --state open --json number,isCrossRepository \
+                       --jq '.[] | select(.isCrossRepository | not) | .number'); do
+            git -C src fetch -q --depth 1 origin "refs/pull/$n/head"
+            mkdir -p "_site/pr-preview/pr-$n"
+            git -C src archive FETCH_HEAD | tar -x -C "_site/pr-preview/pr-$n"
+            rm -rf "_site/pr-preview/pr-$n/CNAME" "_site/pr-preview/pr-$n/.github"
+            echo "preview: pr-$n"
+          done
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Link the preview on the pull request
+        if: github.event_name == 'pull_request_target' && (github.event.action == 'opened' || github.event.action == 'reopened')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          N: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$N" -R "$GITHUB_REPOSITORY" \
+            --body "Preview: ${{ steps.deployment.outputs.page_url }}pr-preview/pr-$N/ (updates on every push to this PR)"
