@@ -838,7 +838,7 @@ html.no-js .row .n { opacity: 1; }   /* no play button to swap in */
   .row .idx::before { opacity: 1; }
   .row .go { display: none; }
   .row.compact { grid-template-columns: minmax(0, 1fr) auto 44px; }
-  .row.compact :is(.idx, .n) { grid-column: 3; grid-row: 1; align-self: center; }
+  .row.compact :is(.idx, .n) { grid-column: 3; grid-row: 1; align-self: center; padding: 0 0 0 2px; }   /* drop the desktop .9em top pad: the ▶ sits centred in the ring */
   .row.compact .meta { align-self: center; padding-top: 0; }
   .spec { column-gap: 20px; }
   .big-links :is(a, button) { flex-direction: column; align-items: flex-start; }
