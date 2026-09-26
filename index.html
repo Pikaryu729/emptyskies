@@ -1,72 +1,93 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>EmptySkies</title>
   <meta name="description" content="EmptySkies, a Baltimore artist. Debut album emptyabovebelow coming soon. Listen on SoundCloud.">
+  <link rel="canonical" href="https://emptyskies.com/">
   <meta name="theme-color" content="#060608">
   <meta property="og:type" content="website">
   <meta property="og:title" content="EmptySkies">
   <meta property="og:description" content="Debut album emptyabovebelow, coming soon.">
-  <meta property="og:image" content="assets/img/avatar.jpg">
+  <meta property="og:url" content="https://emptyskies.com/">
+  <meta property="og:image" content="https://emptyskies.com/assets/img/avatar.jpg">
+  <meta property="og:image:width" content="500">
+  <meta property="og:image:height" content="500">
+  <meta property="og:image:alt" content="a carved mask with slit eyes and rows of drilled holes">
   <meta name="twitter:card" content="summary">
+  <!-- shell:head -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" href="assets/img/avatar.jpg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@100..900&family=JetBrains+Mono:wght@300;400&display=swap">
+  <link rel="preload" href="assets/fonts/CloisterBlack.ttf" as="font" type="font/ttf" crossorigin><link rel="preload" href="assets/fonts/BigShouldersDisplay-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="assets/fonts/JetBrainsMono-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
+  <script>document.documentElement.classList.replace('no-js', 'js')</script>
+  <script defer src="js/core.js"></script><script defer src="js/hero.js"></script><script defer src="js/sky.js"></script><script defer src="js/player.js"></script><script defer src="js/site.js"></script><script defer src="js/barb.js"></script>
+  <!-- /shell:head -->
 </head>
 <body>
+<a class="skip" href="#page">skip to content</a>
 <canvas id="bg" aria-hidden="true"></canvas>
 <div class="veil" aria-hidden="true"></div>
-
-<div class="corner tl">EmptySkies</div>
-<div class="corner tr">Baltimore<br>39.29°N 76.61°W</div>
-<div class="corner bl"><span class="rec" aria-hidden="true"></span><span id="now">now showing / profile</span></div>
-<div class="corner br"><a href="https://soundcloud.com/emptyskies-416412725" target="_blank" rel="noopener">SoundCloud ↗</a></div>
-
-<main>
-  <section class="hero">
-    <div>
-      <h1 class="mark">EmptySkies</h1>
-      <div class="under"><span>emptyabovebelow</span><em>the album</em><span>soon</span></div>
+<header class="bar">
+  <a class="bar-mark" href="./">EmptySkies</a>
+  <nav class="bar-nav" aria-label="site"><ol>
+    <li><a href="emptyabovebelow/"><span class="alt" aria-hidden="true">+1</span>emptyabovebelow</a></li>
+    <li><a href="./" aria-current="page"><span class="alt" aria-hidden="true">0</span>surface</a></li>
+    <li><a href="./#released"><span class="alt" aria-hidden="true">−1</span>released</a></li>
+    <li><a href="links/"><span class="alt" aria-hidden="true">−3</span>links</a></li>
+  </ol></nav>
+  <p class="bar-geo">Baltimore <span data-clock></span><br>39.29°N 76.61°W</p>
+</header>
+<main id="page" tabindex="-1" data-page="home" data-depth="0" data-span="-1" data-cover="avatar" data-mood="surface">
+  <section class="hero" aria-labelledby="mark">
+    <div class="hero-pin">
+      <h1 class="mark" id="mark" tabindex="-1">EmptySkies</h1>
+      <a class="under" data-hero-under href="emptyabovebelow/"><span>emptyabovebelow</span><i class="sep" aria-hidden="true">·</i><em>the album</em><i class="sep" aria-hidden="true">·</i><span>soon</span></a>
+      <a class="scroll-cue" data-hero-cue href="#released">descend</a>
     </div>
-    <div class="scroll-cue">descend</div>
   </section>
 
-  <section class="tracks-sec" aria-labelledby="rel">
-    <div class="sec-label"><span id="rel">released</span><span>aug — sep 2026</span></div>
+  <section class="released" id="released" data-depth-at="-1" aria-labelledby="released-h">
+    <div class="sec-label" data-hero-handoff><h2 id="released-h">released</h2><span>5 · 16:34</span><span>aug — sep 2026</span></div>
     <ol class="tracks">
-      <li><a class="row" data-img="nohand2hold" data-name="NoHand2Hold" href="https://soundcloud.com/emptyskies-416412725/nohand2hold" target="_blank" rel="noopener">
-        <span class="idx">05</span><span class="ttl">NoHand2Hold</span>
-        <span class="meta"><span>rap</span><span>09.12.26</span></span>
+      <li class="row" data-track="nohand2hold" data-progress="nohand2hold">
+        <button class="idx play" data-play="nohand2hold" aria-pressed="false"><span class="sr-only">05 play NoHand2Hold</span></button><span class="n" aria-hidden="true">05</span>
+        <a class="ttl" href="music/nohand2hold/" data-weight="nohand2hold">NoHand2Hold</a>
+        <span class="meta"><span>rap</span><time datetime="2026-09-12T20:13:30Z">09.12.26</time></span>
         <span class="cap">no hand 2 hold so i put racks in my jeans..</span>
-        <span class="go">listen ↗</span></a></li>
-      <li><a class="row" data-img="deathalliwant" data-name="DeathAlliWant" href="https://soundcloud.com/emptyskies-416412725/deathalliwant" target="_blank" rel="noopener">
-        <span class="idx">04</span><span class="ttl">DeathAlliWant</span>
-        <span class="meta"><span>rap</span><span>09.12.26</span></span>
+        <span class="go" aria-hidden="true">enter →</span>
+      </li>
+      <li class="row" data-track="deathalliwant" data-progress="deathalliwant">
+        <button class="idx play" data-play="deathalliwant" aria-pressed="false"><span class="sr-only">04 play DeathAlliWant</span></button><span class="n" aria-hidden="true">04</span>
+        <a class="ttl" href="music/deathalliwant/" data-weight="deathalliwant">DeathAlliWant</a>
+        <span class="meta"><span>rap</span><time datetime="2026-09-12T20:05:20Z">09.12.26</time></span>
         <span class="cap">im tryn tryna die.</span>
-        <span class="go">listen ↗</span></a></li>
-      <li><a class="row" data-img="mylittlesoldier" data-name="MyLittleSoldier" href="https://soundcloud.com/emptyskies-416412725/mylittlesoldier" target="_blank" rel="noopener">
-        <span class="idx">03</span><span class="ttl">MyLittleSoldier</span>
-        <span class="meta"><span>alt rock</span><span>08.23.26</span></span>
+        <span class="go" aria-hidden="true">enter →</span>
+      </li>
+      <li class="row" data-track="mylittlesoldier" data-progress="mylittlesoldier">
+        <button class="idx play" data-play="mylittlesoldier" aria-pressed="false"><span class="sr-only">03 play MyLittleSoldier</span></button><span class="n" aria-hidden="true">03</span>
+        <a class="ttl" href="music/mylittlesoldier/" data-weight="mylittlesoldier">MyLittleSoldier</a>
+        <span class="meta"><span>alt rock</span><time datetime="2026-08-23T14:21:46Z">08.23.26</time></span>
         <span class="cap">hold close</span>
-        <span class="go">listen ↗</span></a></li>
-      <li><a class="row" data-img="avatar" data-name="MiracleOfLife" href="https://soundcloud.com/emptyskies-416412725/tracks" target="_blank" rel="noopener">
-        <span class="idx">02</span><span class="ttl">MiracleOfLife</span>
-        <span class="meta"><span>—</span><span>08.22.26</span></span>
-        <span class="cap">on soundcloud</span>
-        <span class="go">listen ↗</span></a></li>
-      <li><a class="row" data-img="bubbles" data-name="Bubbles" href="https://soundcloud.com/emptyskies-416412725/bubbles" target="_blank" rel="noopener">
-        <span class="idx">01</span><span class="ttl">Bubbles</span>
-        <span class="meta"><span>ambient</span><span>08.22.26</span></span>
+        <span class="go" aria-hidden="true">enter →</span>
+      </li>
+      <li class="row" data-track="miracleoflife" data-progress="miracleoflife">
+        <button class="idx play" data-play="miracleoflife" aria-pressed="false"><span class="sr-only">02 play MiracleOfLife</span></button><span class="n" aria-hidden="true">02</span>
+        <a class="ttl" href="music/miracleoflife/" data-weight="miracleoflife">MiracleOfLife</a>
+        <span class="meta"><span>alt rock</span><time datetime="2026-08-22T02:41:12Z">08.22.26</time></span>
+        <span class="go" aria-hidden="true">enter →</span>
+      </li>
+      <li class="row" data-track="bubbles" data-progress="bubbles">
+        <button class="idx play" data-play="bubbles" aria-pressed="false"><span class="sr-only">01 play Bubbles</span></button><span class="n" aria-hidden="true">01</span>
+        <a class="ttl" href="music/bubbles/" data-weight="bubbles">Bubbles</a>
+        <span class="meta"><span>ambient</span><time datetime="2026-08-22T02:01:40Z">08.22.26</time></span>
         <span class="cap">whispers of many broken promises</span>
-        <span class="go">listen ↗</span></a></li>
+        <span class="go" aria-hidden="true">enter →</span>
+      </li>
     </ol>
   </section>
 
-  <section class="album" aria-labelledby="alb">
+  <section class="album" aria-labelledby="soon">
     <div class="marquee" aria-hidden="true">
       <div class="marquee-track">
         <span>emptyabovebelow</span><span>emptyabovebelow</span><span>emptyabovebelow</span>
@@ -75,25 +96,26 @@
     </div>
     <div class="album-body">
       <div>
-        <h2 class="soon" id="alb">soon.</h2>
-        <p>emptyabovebelow, the first EmptySkies album. five songs are already out. follow on soundcloud to hear the rest the night it drops.</p>
+        <h2 class="soon" id="soon">soon.</h2>
+        <p>emptyabovebelow, the first EmptySkies album. follow on soundcloud to hear it when it drops.</p>
       </div>
-      <a class="follow" href="https://soundcloud.com/emptyskies-416412725" target="_blank" rel="noopener">follow ↗</a>
+      <div class="album-acts">
+        <a class="door" href="emptyabovebelow/">↑ ascend: emptyabovebelow</a>
+        <a class="btn" href="https://soundcloud.com/emptyskies-416412725" target="_blank" rel="noopener">follow ↗</a>
+      </div>
     </div>
   </section>
 
   <section class="heard" aria-label="listener comments">
-    <q>holy<small>— on NoHand2Hold</small></q>
-    <q>insane bro<small>— on NoHand2Hold</small></q>
+    <figure><blockquote>holy</blockquote><figcaption>— on <a href="music/nohand2hold/">NoHand2Hold</a></figcaption></figure>
+    <figure><blockquote>insane bro</blockquote><figcaption>— on <a href="music/nohand2hold/">NoHand2Hold</a></figcaption></figure>
   </section>
+
+  <a class="door big floor-door" href="links/">↓ the floor: links</a>
 </main>
-
-<footer>
-  <span>EmptySkies</span>
-  <span>Baltimore, MD</span>
-  <span>emptyabovebelow — soon</span>
+<footer class="foot">
+  <span>EmptySkies — Baltimore, MD</span><span>emptyabovebelow — soon</span>
+  <span><a href="https://soundcloud.com/emptyskies-416412725" target="_blank" rel="noopener">SoundCloud ↗</a> · <a href="https://www.instagram.com/emptyabovebelow/" target="_blank" rel="noopener">Instagram ↗</a></span>
 </footer>
-
-<script src="main.js"></script>
 </body>
 </html>

@@ -1,169 +1,1113 @@
+/* EmptySkies — one stylesheet. Sections: 0 setup · 1 base · 2 sky · 3 chrome · 3 player · 4 components · 5 pages · 6 motion */
+/* ========== 0. setup: fonts, registered properties, tokens ========== */
+/* self-hosted: nothing third-party on first paint. Big Shoulders + JetBrains Mono are OFL (licences in assets/fonts). */
 @font-face {
   font-family: "Cloister Black";
   src: url("assets/fonts/CloisterBlack.ttf") format("truetype");
   font-display: swap;
 }
+@font-face {
+  font-family: "Big Shoulders Display";
+  src: url("assets/fonts/BigShouldersDisplay-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: fallback;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("assets/fonts/JetBrainsMono-latin.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+}
+@property --drop { syntax: '<percentage>'; inherits: true; initial-value: 0%; }
+@property --r { syntax: '<length>'; inherits: false; initial-value: 0px; }
 
-  :root {
-    color-scheme: dark;
-    --void: #060608;
-    --bone: #dcdcd8;
-    --ash: #8b8c8f;
-    --smoke: #4a4b50;
-    --hair: rgba(220,220,216,.16);
-    --gothic: "Cloister Black", "Old English Text MT", "Times New Roman", serif;
-    --tall: "Big Shoulders Display", "Oswald", "Arial Narrow", sans-serif;
-    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
-  }
-  * { box-sizing: border-box; }
-  html { background: var(--void); overflow-x: clip; }
-  body {
-    background: var(--void);
-    color: var(--bone);
-    font-family: var(--mono);
-    font-weight: 300;
-    font-size: 12px;
-    line-height: 1.6;
-    letter-spacing: .04em;
-    -webkit-font-smoothing: antialiased;
-  }
-  a { color: inherit; text-decoration: none; }
-  a:focus-visible { outline: 1px solid var(--bone); outline-offset: 4px; }
-  ::selection { background: var(--bone); color: var(--void); }
+:root {
+  color-scheme: dark;
+  --void: #060608;
+  --bone: #dcdcd8;
+  --ash: #8b8c8f;
+  --smoke: #4a4b50;
+  --hair: rgba(220,220,216,.16);
+  --blood: #8a0f14;
+  --fog: #d6d6d2;
+  /* zone tokens: in-page type uses these, never mix-blend-mode.
+     below, small type sits on the live sky, whose covers peak near .45 luminance (bone is only 3.6:1 there):
+     --ink-2 stays close to bone, and --halo, a soft dark dilation of the glyphs, gives small type its own ground */
+  --ink: var(--bone);
+  --ink-2: #c5c6c9;
+  --line: var(--hair);
+  --halo: 3px 0 3px var(--hl), -3px 0 3px var(--hl), 0 3px 3px var(--hl), 0 -3px 3px var(--hl),
+          6px 0 6px var(--hl), -6px 0 6px var(--hl), 0 6px 6px var(--hl), 0 -6px 6px var(--hl),
+          4px 4px 6px var(--hl), -4px -4px 6px var(--hl), 4px -4px 6px var(--hl), -4px 4px 6px var(--hl), 0 0 16px var(--hl);
+  --hl: rgba(6,6,8,.8);
+  --ground: rgba(6,6,8,.5);   /* a soft patch under a label whose gaps the halo can't reach (see .sec-label) */
+  --gothic: "Cloister Black", "Old English Text MT", "Times New Roman", serif;
+  --tall: "Big Shoulders Display", "Oswald", "Arial Narrow", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --ease-io: cubic-bezier(.7,0,.2,1);
+  --ease-out: cubic-bezier(.2,.7,.1,1);
+  --gutter: 20px;
+  --dock-h: 56px;
+}
+@media (max-width: 720px) { :root { --gutter: 16px; } }
 
-  /* ---------- moving background ---------- */
-  #bg {
-    position: fixed; inset: 0; width: 100vw; height: 100lvh; z-index: 0; display: block;
-    background: var(--void) url("assets/img/avatar.jpg") center / cover no-repeat;
-  }
-  #bg:not(.gl) { filter: grayscale(.7) brightness(.42) contrast(1.1); }
-  #bg.gl { background: var(--void); }
-  .veil { position: fixed; inset: 0; z-index: 1; pointer-events: none;
-    background: linear-gradient(180deg, rgba(6,6,8,.35) 0%, transparent 25%, transparent 70%, rgba(6,6,8,.6) 100%); }
+/* the album page is the only light place */
+html[data-zone=above] {
+  --ink: var(--void);
+  --ink-2: #45464b;
+  --line: rgba(6,6,8,.2);
+  --halo: none;   /* dark ink on the flat fog needs no ground */
+  --ground: transparent;
+  color-scheme: light;
+}
 
-  /* ---------- fixed corners ---------- */
-  .corner {
-    position: fixed; z-index: 20; font-size: 10px; letter-spacing: .22em; text-transform: uppercase;
-    color: var(--bone); mix-blend-mode: difference; padding: 18px 20px;
-  }
-  .tl { top: env(safe-area-inset-top, 0px); left: 0; }
-  .tr { top: env(safe-area-inset-top, 0px); right: 0; text-align: right; }
-  .bl { bottom: env(safe-area-inset-bottom, 0px); left: 0; }
-  .br { bottom: env(safe-area-inset-bottom, 0px); right: 0; text-align: right; }
-  .corner a { border-bottom: 1px solid currentColor; padding-bottom: 1px; }
-  .rec { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--bone); margin-right: 8px; vertical-align: 1px; animation: rec 1.6s steps(1) infinite; }
-  @keyframes rec { 50% { opacity: 0; } }
-  #now { transition: opacity .4s ease; }
+/* ========== 1. base ========== */
+* { box-sizing: border-box; }
+html {
+  background: var(--void); overflow-x: clip;
+  /* focus and find-in-page keep what they reveal clear of the bottom chrome (dock bar, desktop dock + corner scrim).
+     no scroll-padding-top: hash jumps land where the router and the depth anchors put them */
+  scroll-padding-bottom: calc(var(--dock-h) + 28px + env(safe-area-inset-bottom));
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0;
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-weight: 300;
+  font-size: 12px;
+  line-height: 1.6;
+  letter-spacing: .04em;
+  -webkit-font-smoothing: antialiased;
+  transition: color .8s ease;
+}
+html[data-zone=above] body { background: var(--fog); }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; letter-spacing: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+img { display: block; max-width: 100%; }
+:focus-visible { outline: 1px solid currentColor; outline-offset: 4px; }
+#page h1:focus { outline: none; }
+::selection { background: var(--bone); color: var(--void); }
 
-  main { position: relative; z-index: 10; padding-inline: 20px; }
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.skip {
+  position: fixed; left: max(var(--gutter), env(safe-area-inset-left)); top: calc(12px + env(safe-area-inset-top)); z-index: 30;
+  padding: 10px 14px; background: var(--bone); color: var(--void);
+  font-size: 10px; letter-spacing: .22em; text-transform: uppercase;
+  transform: translateY(-200%);
+}
+.skip:focus { transform: none; }
 
-  /* ---------- hero ---------- */
-  .hero {
-    position: relative; min-height: 100svh; display: grid; place-items: center; text-align: center;
-    padding-block: 80px;
-  }
-  .mark {
-    font-family: var(--gothic); font-weight: 400;
-    font-size: clamp(64px, 17vw, 250px); line-height: .9; margin: 0;
-    color: var(--bone); mix-blend-mode: difference;
-    letter-spacing: -.01em;
-    animation: breathe 9s ease-in-out infinite;
-  }
-  @keyframes breathe { 50% { letter-spacing: .015em; opacity: .88; } }
-  .under {
-    margin-top: 26px; display: flex; gap: 10px 28px; justify-content: center; flex-wrap: wrap;
-    font-size: 10px; letter-spacing: .5em; text-transform: uppercase; color: var(--bone);
-    mix-blend-mode: difference; padding-left: .5em;
-  }
-  .under em { font-style: normal; color: var(--ash); }
-  .scroll-cue {
-    position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%);
-    font-size: 9px; letter-spacing: .4em; text-transform: uppercase; color: var(--ash);
-    display: grid; justify-items: center; gap: 10px;
-  }
-  .scroll-cue::after { content: ""; width: 1px; height: 38px; background: linear-gradient(var(--ash), transparent); animation: drip 2.4s ease-in-out infinite; transform-origin: top; }
-  @keyframes drip { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+/* no-js: nothing that needs the player */
+html.no-js [data-play], html.no-js .js-only { display: none !important; }
 
-  /* ---------- tracks ---------- */
-  .tracks-sec { max-width: 1320px; margin: 0 auto; padding-block: 18vh 12vh; }
-  .sec-label { display: flex; justify-content: space-between; gap: 16px; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: var(--ash); padding-bottom: 14px; border-bottom: 1px solid var(--hair); }
-  .tracks { list-style: none; margin: 0; padding: 0; }
-  .tracks li { border-bottom: 1px solid var(--hair); }
-  .row {
-    position: relative; display: grid; grid-template-columns: 4ch minmax(0, 1fr) auto; gap: 0 24px; align-items: center;
-    padding: 10px 0 12px;
-  }
-  .idx { font-size: 10px; color: var(--ash); align-self: start; padding-top: 1.6em; }
-  .ttl {
-    font-family: var(--tall); font-weight: 150; text-transform: uppercase;
-    font-size: clamp(46px, 10.5vw, 150px); line-height: .88; letter-spacing: -.005em;
-    color: var(--bone); mix-blend-mode: difference;
-    transition: font-weight .6s cubic-bezier(.2,.7,.1,1), letter-spacing .6s cubic-bezier(.2,.7,.1,1);
-    overflow-wrap: anywhere;
-  }
-  .meta { display: grid; justify-items: end; gap: 4px; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--ash); text-align: right; }
-  .cap {
-    grid-column: 2 / -1; font-family: var(--mono); font-size: 13px; letter-spacing: .06em; color: var(--bone);
-    max-height: 0; opacity: 0; overflow: hidden; transition: max-height .5s ease, opacity .5s ease, margin .5s ease;
-  }
-  .cap::before { content: "— "; color: var(--ash); }
-  .row:hover .ttl, .row:focus-visible .ttl, .row.on .ttl { font-weight: 800; letter-spacing: .01em; }
-  .row:hover .cap, .row:focus-visible .cap, .row.on .cap { max-height: 3em; opacity: 1; margin-top: 8px; }
-  .row .go { position: absolute; right: 0; bottom: 14px; font-size: 10px; letter-spacing: .3em; color: var(--bone); opacity: 0; transition: opacity .4s; }
-  .row:hover .go, .row.on .go { opacity: 1; }
+/* the gutter, or the notch in landscape. declared on #page so a --gutter set on #page (site, >=900) still counts */
+#page {
+  --pad-l: max(var(--gutter), env(safe-area-inset-left));
+  --pad-r: max(var(--gutter), env(safe-area-inset-right));
+  position: relative; z-index: 10; display: block; padding-inline: var(--pad-l) var(--pad-r);
+}
 
-  /* ---------- album ---------- */
-  .album { padding-block: 16vh 8vh; }
-  .marquee { overflow: hidden; margin-inline: -20px; border-block: 1px solid var(--hair); padding-block: 18px; }
-  .marquee-track { display: flex; width: max-content; animation: slide 38s linear infinite; }
-  .marquee span {
-    font-family: var(--tall); font-weight: 900; text-transform: uppercase;
-    font-size: clamp(64px, 13vw, 190px); line-height: .9; padding-right: .4em; white-space: nowrap;
-    color: transparent; -webkit-text-stroke: 1px var(--bone);
-  }
-  .marquee span:nth-child(3n+2) { color: var(--bone); -webkit-text-stroke: 0; mix-blend-mode: difference; }
-  @keyframes slide { to { transform: translateX(-50%); } }
-  .album-body {
-    max-width: 1320px; margin: 0 auto; padding-top: 56px;
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px;
-    align-items: end;
-  }
-  .album-body p { margin: 0; max-width: 44ch; font-size: 13px; color: var(--bone); }
-  .album-body .soon { font-family: var(--gothic); font-weight: 400; font-size: clamp(44px, 6vw, 84px); line-height: 1; letter-spacing: 0; margin: 0 0 14px; color: var(--bone); }
-  .follow {
-    justify-self: end; display: inline-flex; gap: 14px; align-items: center;
-    font-size: 11px; letter-spacing: .35em; text-transform: uppercase;
-    padding: 18px 26px; border: 1px solid var(--bone); color: var(--bone);
-    transition: background .35s, color .35s;
-  }
-  .follow:hover { background: var(--bone); color: var(--void); }
+/* ========== 2. sky: #bg, veil, ink ========== */
+#bg {
+  position: fixed; top: 0; left: 0; z-index: 0; display: block;
+  width: 100%; height: 100vh; height: 100lvh;   /* lvh: the url bar never resizes the canvas */
+  background: var(--void); pointer-events: none;
+}
+/* no JS: the avatar, graded in CSS */
+html.no-js #bg { background: var(--void) url("assets/img/avatar.jpg") center / cover no-repeat; filter: grayscale(.7) brightness(.42) contrast(1.1); }
+html[data-zone=above] #bg:not(.gl) { background: var(--fog); filter: none; }
 
-  .heard { max-width: 1320px; margin: 0 auto; padding-block: 12vh 18vh; display: flex; flex-wrap: wrap; gap: 8vh 12vw; justify-content: center; }
-  .heard q { font-family: var(--gothic); font-size: clamp(30px, 4vw, 56px); color: var(--bone); quotes: none; mix-blend-mode: difference; }
-  .heard q:nth-child(2) { transform: translateY(6vh); }
-  .heard small { display: block; font-family: var(--mono); font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: var(--ash); margin-top: 6px; }
+/* no WebGL, file:// or ?nogl: sky.js swaps the canvas for div#bg and sets --cover (P2-10 polish).
+   a still on purpose: any endless animation here recomposites the whole viewport every frame,
+   and the machines that get this sky are the ones that can't afford it */
+div#bg { overflow: hidden; transition: background-color .8s; }
+div#bg::before, div#bg::after { content: ""; position: absolute; inset: 0; }
+div#bg::before {
+  background: var(--cover, none) center / cover no-repeat;
+  filter: grayscale(.7) brightness(.42) contrast(1.1);
+  transform: scale(1.1);   /* framed like the GL sky's zoom */
+  transition: background-image 1.2s ease-in-out, opacity .8s;
+}
+div#bg::after {   /* film grain: a 160px turbulence tile */
+  opacity: .09;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E") 0 0 / 160px 160px;
+}
+html[data-zone=above] div#bg::before { opacity: 0; }
+html[data-page=nosignal] div#bg::after { opacity: .3; }   /* no signal: the grain becomes snow */
 
-  footer {
-    position: relative; z-index: 10; padding: 22px 20px 64px; border-top: 1px solid var(--hair);
-    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
-    font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: var(--ash);
-    background: linear-gradient(transparent, rgba(6,6,8,.8));
-  }
+.veil {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(6,6,8,.35) 0%, transparent 25%, transparent 70%, rgba(6,6,8,.6) 100%);
+  transition: opacity .8s;
+}
+div#bg + .veil {   /* the CSS sky also gets 1px scanlines and a vignette */
+  background:
+    repeating-linear-gradient(180deg, rgba(6,6,8,.28) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(6,6,8,.72) 100%),
+    linear-gradient(180deg, rgba(6,6,8,.35) 0%, transparent 25%, transparent 70%, rgba(6,6,8,.6) 100%);
+}
+html[data-zone=above] .veil { opacity: 0; }
 
-  @media (max-width: 720px) {
-    .corner { padding: 14px 16px; font-size: 9px; letter-spacing: .16em; }
-    main { padding-inline: 16px; }
-    .row { grid-template-columns: minmax(0, 1fr) auto; }
-    .idx { display: none; }
-    .cap { grid-column: 1 / -1; }
-    .meta { align-self: start; padding-top: .6em; }
-    .row .go { display: none; }
-    .album-body { grid-template-columns: 1fr; }
-    .follow { justify-self: start; }
-    .marquee { margin-inline: -16px; }
-    .heard q:nth-child(2) { transform: none; }
+/* CSS ink (the GL sky draws its own): blooms from --x --y, drains toward an origin off-screen */
+.ink {
+  position: fixed; inset: 0; z-index: 15; pointer-events: none; visibility: hidden;
+  --x: 50%; --y: 50%;
+  background: radial-gradient(circle at var(--x) var(--y), var(--void) calc(var(--r) - 3px), var(--blood) var(--r), transparent calc(var(--r) + 5px));
+  transition: --r .32s cubic-bezier(.5,0,.75,0);
+}
+.ink.on { visibility: visible; }
+.ink.out { transition: --r .65s ease-out; }
+.ink.snap { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  div#bg::before { transition: opacity .15s; }
+  .ink, .ink.out { transition: none; }
+}
+@media (prefers-contrast: more) {
+  .veil, div#bg + .veil { background: rgba(6,6,8,.5); }
+}
+@media (forced-colors: active) {
+  #bg, .veil, .ink { display: none; }
+}
+
+/* ========== 3. chrome: bar, menu, gauge, corners, footer, toast, keys ========== */
+
+/* ---------- bar (fixed, difference blend: reads on the dark sky and on the fog) ---------- */
+.bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px 28px;
+  padding: calc(18px + env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right)) 18px max(var(--gutter), env(safe-area-inset-left));
+  --c: var(--bone); color: var(--c); mix-blend-mode: difference; pointer-events: none;
+  font: 300 10px/1.5 var(--mono); letter-spacing: .22em; text-transform: uppercase;
+}
+.bar > * { pointer-events: auto; }
+/* the fixed bar spans the layout viewport, so a page wider than the screen (a fallback face in a huge title) would
+   carry the menu button off it. html's clip doesn't stop mobile Chrome widening that viewport; an element's does */
+#page { overflow-x: clip; }
+.bar-mark {
+  display: inline-block; padding-block: 11px; margin-block: -11px;   /* a 44px target that doesn't move the bar */
+  font: 400 22px/1 var(--gothic); letter-spacing: 0; text-transform: none;
+}
+.bar-nav { position: relative; }
+.bar-nav ol { display: flex; gap: 28px; margin: 0; padding: 0; list-style: none; }
+.bar-nav a { display: inline-block; padding-block: 6px; transition: opacity .35s; }
+.bar-nav ol:hover a:not(:hover) { opacity: .45; }
+.bar-nav .alt { color: var(--ash); margin-right: .9em; }
+.bar-nav::after {
+  content: ""; position: absolute; bottom: 0; height: 1px; left: var(--x, 0); width: var(--w, 0);
+  background: var(--c); pointer-events: none;   /* not currentColor: "empty" keeps the hairlines */
+}
+.bar-nav.is-set::after { transition: left .6s var(--ease-io), width .6s var(--ease-io); }
+.bar-geo { margin: 0; text-align: right; }
+[data-clock] { font-variant-numeric: tabular-nums; }
+.menu-btn { display: none; }
+
+/* ---------- mobile menu: dialog#menu, a shutter that drops with a blood edge ---------- */
+html:has(#menu[open]) { overflow: hidden; }
+html:has(#menu[open]) #dock { visibility: hidden; }   /* inert under the modal anyway; it would ghost through the strip */
+#menu {
+  position: fixed; inset: 0; width: 100%; height: 100dvh; max-width: none; max-height: none; margin: 0; border: 0;
+  padding: calc(18px + env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
+  background: rgba(6,6,8,.92); color: var(--bone);
+  font: 300 10px/1.5 var(--mono); letter-spacing: .22em; text-transform: uppercase;
+  overflow: auto; overscroll-behavior: contain;
+  clip-path: inset(0 0 calc(100% - var(--drop)) 0);
+  transition: --drop .55s var(--ease-io), overlay .55s allow-discrete, display .55s allow-discrete;
+}
+#menu[open] { --drop: 100%; display: flex; flex-direction: column; }
+html[data-zone=above] #menu { background: rgba(6,6,8,.96); }   /* the white page ghosts through .92 */
+@starting-style { #menu[open] { --drop: 0%; } }
+#menu::backdrop { background: transparent; }
+#menu::before {
+  content: ""; position: fixed; left: 0; right: 0; top: calc(var(--drop) - 1px); height: 1px;
+  background: var(--blood); pointer-events: none;
+}
+.m-top { display: flex; justify-content: space-between; align-items: baseline; }
+.m-mark { font: 400 22px/1 var(--gothic); letter-spacing: 0; text-transform: none; }
+.menu-btn, .menu-close {
+  align-items: center; justify-content: flex-end; min-width: 44px; min-height: 44px;
+  margin: -12px -10px -12px 0; padding: 0 10px; text-transform: uppercase;
+}
+.menu-close { display: inline-flex; }
+
+/* only the list scrolls: close and the strip stay put on a landscape phone */
+#menu > nav { margin-block: auto; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; }
+.m-list { position: relative; list-style: none; margin: 0; padding: 28px 0 28px 52px; }
+.m-list::before { content: ""; position: absolute; left: 38px; top: 0; bottom: 0; width: 1px; background: var(--hair); }
+.m-list li, .m-foot { animation: m-in .6s var(--ease-out) both; animation-delay: calc(var(--i) * 30ms + 160ms); }
+.m-list li { position: relative; display: flex; align-items: center; }
+.m-alt {
+  position: absolute; left: -52px; width: 30px; text-align: right;
+  font-size: 9px; letter-spacing: .06em; color: var(--ash);
+}
+li:has(> a[aria-current=page]) .m-alt { color: var(--bone); }
+.m-alt::after { content: ""; position: absolute; left: calc(100% + 4px); top: 50%; width: 9px; height: 1px; background: currentColor; }
+.m-big a {
+  display: block; padding-block: 5px; overflow-wrap: anywhere;   /* a wider fallback face wraps instead of clipping */
+  font: 150 clamp(36px, 11vw, 96px)/.86 var(--tall); letter-spacing: 0;   /* 11vw: EMPTYABOVEBELOW at 800 fits 360px */
+  transition: font-weight .5s var(--ease-out);
+}
+.m-big a[aria-current] { font-weight: 800; }
+/* the menu focuses the current item on open; an underline reads as focus without boxing the type */
+#menu .m-list a:focus-visible { outline: 0; text-decoration: underline 1px; text-underline-offset: .14em; }
+.m-song a {
+  flex: 1; display: flex; align-items: center; gap: .6em; min-height: 44px;
+  font-size: min(22px, 5.6vw); letter-spacing: .02em; text-transform: none; color: var(--ash);
+}
+.m-song a[aria-current] { color: var(--bone); }
+@media (hover: hover) { .m-big a:hover { font-weight: 800; } .m-song a:hover { color: var(--bone); } }
+.m-n { font-size: .55em; letter-spacing: .2em; }
+.m-play { flex: none; width: 44px; height: 44px; display: grid; place-items: center; font-size: 11px; }
+.m-play:focus-visible { outline-offset: -6px; }   /* the scrolling list would clip a ring outside the box */
+.m-play::before { content: "\25B6\FE0E"; }   /* text presentation: iOS would draw an emoji */
+.m-play[aria-pressed=true]::before { content: "■"; color: var(--blood); }
+.m-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0 16px; margin: 0; font-size: 9px; letter-spacing: .18em; color: var(--ash); }
+.m-foot a { display: inline-flex; align-items: center; min-height: 44px; color: var(--bone); }
+@keyframes m-in { from { opacity: 0; translate: 0 22px; } }
+
+/* ---------- depth gauge (>=900, not touch) ---------- */
+#gauge {
+  display: none; position: fixed; right: max(20px, env(safe-area-inset-right)); top: 22vh; bottom: 22vh; width: 56px; z-index: 20;
+  --c: var(--bone); color: var(--c); mix-blend-mode: difference;
+  font: 400 9px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; white-space: nowrap;
+}
+#gauge ol { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
+#gauge ol::before { content: ""; position: absolute; right: 10px; top: 0; bottom: 0; width: 1px; background: var(--c); opacity: .4; }
+#gauge li { position: absolute; left: 0; right: 0; top: calc((1 - var(--d)) / 4 * 100%); }
+#gauge a { position: absolute; left: 0; right: 0; top: -8px; height: 16px; }
+.g-t { position: absolute; right: 10px; top: 50%; width: 10px; height: 1px; background: var(--c); opacity: .7; }
+.g-s .g-t { width: 5px; }
+.g-l {
+  position: absolute; right: 28px; top: 50%; translate: 0 -50%; color: var(--ash);
+  opacity: 0; pointer-events: none; transition: opacity .3s;   /* opacity, not visibility: the label is the link's name */
+}
+/* no label at rest: any label reaches ~130px into the content column. the bright tick and the readout say where you are */
+#gauge a[aria-current=page] .g-l { color: var(--bone); }
+#gauge a[aria-current=page] .g-t { opacity: 1; }
+#gauge:is(:hover, :focus-within) .g-l { opacity: 1; pointer-events: auto; }
+#gauge a:is(:hover, :focus-visible) .g-l { color: var(--bone); }
+#gauge a:focus-visible { outline: 0; }
+#gauge a:focus-visible .g-l { outline: 1px solid currentColor; outline-offset: 4px; }
+.g-needle { position: absolute; left: 0; right: 0; top: 0; pointer-events: none; will-change: transform; }
+.g-needle i { position: absolute; right: 4px; top: -1px; width: 12px; height: 2px; background: var(--c); }
+/* the readout rides beside the needle, left of the ticks: it never crosses the rule and stays inside the 56px box.
+   the labels take its place while they show */
+.g-needle output {
+  position: absolute; right: 24px; top: -5px; font-variant-numeric: tabular-nums; letter-spacing: .04em;
+  transition: opacity .3s;
+}
+#gauge:is(:hover, :focus-within) .g-needle output { opacity: 0; }
+
+/* ---------- bottom-right corner (>=900, not touch); it carries the footer's socials there ---------- */
+.corner-br {
+  display: none; position: fixed; z-index: 20; margin: 0;
+  right: max(20px, env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom));
+  color: var(--bone); mix-blend-mode: difference;
+  font: 300 10px/1.5 var(--mono); letter-spacing: .22em; text-transform: uppercase;
+}
+.corner-br a { border-bottom: 1px solid currentColor; padding-bottom: 1px; }
+
+/* ---------- footer ---------- */
+.foot {
+  position: relative; z-index: 10;
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 24px;
+  padding: 22px max(var(--gutter), env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
+  border-top: 1px solid var(--line);
+  font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: var(--ink-2);
+  transition: color .8s ease;
+}
+html:not([data-zone=above]) .foot { background: linear-gradient(transparent, rgba(6,6,8,.8)); }
+.foot a { display: inline-block; padding-block: 16px; margin-block: -16px; transition: color .3s; }   /* 44px targets */
+.foot-keys { min-height: 44px; margin-block: -16px; text-transform: inherit; transition: color .3s; }
+.foot :is(a, .foot-keys):hover { color: var(--ink); }
+
+/* ---------- scrims: content fades out under the chrome instead of garbling its difference blend ---------- */
+body::before, body::after {
+  content: ""; position: fixed; left: 0; right: 0; z-index: 12; pointer-events: none;   /* over #page, under .ink and the chrome */
+  --s: 6,6,8; --a: .85;
+}
+html[data-zone=above] body::before, html[data-zone=above] body::after { --s: 214,214,210; --a: .9; }
+body::before {
+  top: 0; height: calc(96px + env(safe-area-inset-top));
+  background: linear-gradient(rgba(var(--s), var(--a)) calc(54px + env(safe-area-inset-top)), rgba(var(--s), 0));
+}
+body::after {   /* dock and corner, >=900 */
+  display: none; bottom: 0; height: calc(84px + env(safe-area-inset-bottom));
+  background: linear-gradient(rgba(var(--s), 0), rgba(var(--s), var(--a)) 34px);
+}
+/* at the top of a page nothing is under the bar yet: leave the sky clean until the page moves */
+@supports (animation-timeline: scroll()) {
+  body::before { animation: scrim-in linear both; animation-timeline: scroll(root); animation-range: 0 90px; }
+}
+@keyframes scrim-in { from { opacity: 0; } }
+
+/* ---------- toast ("copied", "muted", "cued · 1:12") ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: calc(var(--dock-h) + 28px + env(safe-area-inset-bottom)); z-index: 25;
+  margin: 0; padding: 8px 14px; translate: -50% 8px;
+  background: var(--void); color: var(--bone); border: 1px solid var(--hair);
+  font: 300 10px/1.4 var(--mono); letter-spacing: .22em; text-transform: uppercase; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity .3s, translate .4s var(--ease-out);
+}
+.toast.on { opacity: 1; translate: -50% 0; }
+
+/* ---------- ? keys dialog ---------- */
+#keys {
+  width: min(380px, calc(100vw - 32px)); padding: 28px 28px 18px;
+  border: 1px solid var(--hair); background: var(--void); color: var(--bone);
+  font: 300 11px/1.6 var(--mono); letter-spacing: .1em;
+}
+#keys::backdrop { background: rgba(6,6,8,.55); }
+#keys h2 { margin: 0 0 18px; font: 400 34px/1 var(--gothic); letter-spacing: 0; }
+.k-list { display: grid; gap: 8px; margin: 0 0 14px; }
+.k-list div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--hair); }
+.k-list dt, .k-list dd { margin: 0; }
+.k-list dd { color: var(--ash); font-size: 10px; letter-spacing: .22em; text-transform: uppercase; }
+#keys kbd { display: inline-block; min-width: 2.2em; padding: 1px 6px; border: 1px solid var(--hair); font: inherit; text-align: center; }
+.k-off, .k-close {
+  display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px;
+  font-size: 10px; letter-spacing: .22em; text-transform: uppercase;
+}
+.k-off i { position: relative; width: 30px; height: 14px; border: 1px solid currentColor; }
+.k-off i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; background: currentColor; transition: translate .25s var(--ease-out); }
+.k-off[aria-checked=true] i::after { translate: 16px 0; }
+.k-close { justify-content: flex-end; color: var(--ash); }
+.k-close:hover { color: var(--bone); }
+
+/* ---------- typed caption ---------- */
+[data-type] .rest { color: transparent; }
+[data-type] .typed::after { content: "▌"; position: absolute; margin-left: .08em; animation: caret 1.6s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+
+/* ---------- "empty": every word lets go; hairlines and the sky stay ---------- */
+html.emptying :is(#page, .foot, .bar, #gauge, .corner-br, #dock),
+html.emptying :is(#page, .foot, .bar, #gauge, .corner-br, #dock) *,
+html.emptying :is(#page, .foot, .bar, #gauge, .corner-br, #dock) *::before,
+html.emptying :is(#page, .foot, .bar, #gauge, .corner-br, #dock) *::after {
+  transition: color 1.2s var(--ease-io), -webkit-text-stroke-color 1.2s var(--ease-io), opacity 1.2s var(--ease-io) !important;
+}
+html.emptied :is(#page, .foot, .bar, #gauge, .corner-br, #dock),
+html.emptied :is(#page, .foot, .bar, #gauge, .corner-br, #dock) *,
+html.emptied :is(#page, .foot, .bar, #gauge, .corner-br, #dock) *::before,
+html.emptied :is(#page, .foot, .bar, #gauge, .corner-br, #dock) *::after {
+  color: transparent !important; -webkit-text-stroke-color: transparent !important; text-shadow: none !important;
+}
+html.emptied :is(#page, #dock) img { opacity: 0 !important; }
+
+/* ---------- responsive ----------
+   desktop chrome needs the width and a pointer that isn't a finger: touch screens of any size get the menu (44px
+   targets). keyboard-only machines report pointer: none and keep the desktop chrome.
+   has-menu / has-chrome are set by site.js once it has injected them, so a failed site.js never hides the nav. */
+@media (max-width: 899px), (pointer: coarse) {
+  html.has-menu :is(.bar-nav, .bar-geo) { display: none; }
+  .menu-btn { display: inline-flex; }
+  /* site.js is on its way with the menu: keep the inline nav out of sight so it doesn't flash, but show it after 3s
+     in case site.js never arrives */
+  html.js:not(.has-menu) :is(.bar-nav, .bar-geo) { animation: es-late 0s 3s backwards; }
+}
+@keyframes es-late { from { visibility: hidden; } }
+@media (max-width: 899px) {
+  /* no menu: nav and geo wrap as small inline mono under the mark, and scroll away with the page */
+  html:not(.has-menu) .bar { position: absolute; flex-wrap: wrap; }
+  html:not(.has-menu) .bar-nav { order: 3; flex-basis: 100%; }
+  html:not(.has-menu) .bar-nav ol { flex-wrap: wrap; gap: 0 16px; }
+  html:not(.has-menu) .bar-nav::after { display: none; }
+}
+@media (max-width: 899px), (pointer: coarse) { .foot { padding-bottom: calc(var(--dock-h) + 28px + env(safe-area-inset-bottom)); } }
+@media (min-width: 900px) and (pointer: fine), (min-width: 900px) and (pointer: none) {
+  #gauge, .corner-br, body::after { display: block; }
+  /* the gauge's 76px + 8px air, mirrored on the left so centred compositions stay on the viewport's centre.
+     through --gutter, so full-bleed pieces that cancel the gutter keep working */
+  html.has-chrome :is(#page, .foot) { --gutter: 84px; }
+  html.has-chrome .foot > span:last-of-type { display: none; }   /* the corner carries the socials */
+}
+@media (pointer: coarse) { html:not(.keys-off) .foot-keys { display: none; } }   /* a phone: shown only to switch them back on */
+
+/* ---------- preferences ---------- */
+@media (prefers-reduced-motion: reduce) {
+  #menu { transition: none; clip-path: none; }
+  #menu::before { display: none; }
+  .m-list li, .m-foot { animation: none; }
+  .bar-nav.is-set::after, .m-big a, .toast, .k-off i::after { transition: none; }
+  [data-type] .typed::after { display: none; }
+}
+@media (prefers-contrast: more) {
+  .bar, #gauge, .corner-br { mix-blend-mode: normal; --c: var(--ink); color: var(--ink); }
+  .bar-nav .alt, .g-l { color: var(--ink-2); }
+  .m-song a, .m-foot, .k-list dd { color: var(--bone); }
+}
+@media (forced-colors: active) {
+  .bar, #gauge, .corner-br { mix-blend-mode: normal; }
+  .bar-nav::after, #menu::before, .m-list::before, .m-alt::after, #gauge ol::before, .g-t, .g-needle i { background: CanvasText; forced-color-adjust: none; }
+  #menu, #keys { border: 1px solid CanvasText; }
+  body::before { background: linear-gradient(Canvas calc(54px + env(safe-area-inset-top)), transparent); }
+  body::after { background: linear-gradient(transparent, Canvas 34px); }
+}
+
+/* ========== 3b. player: the dock, the transmission card, hook styling ========== */
+:root {
+  --dock-bg: rgba(6,6,8,.86);
+  --seek-rest: rgba(220,220,216,.3);
+  --sc-w: min(420px, calc(100vw - 2 * var(--gutter)));
+  --sc-b: calc(80px + env(safe-area-inset-bottom));      /* the revealed card sits above the dock */
+}
+html[data-zone=above] { --dock-bg: rgba(214,214,210,.9); --seek-rest: rgba(6,6,8,.3); }
+
+/* desktop: bottom-left, no background, difference blend, mono */
+.dock {
+  position: fixed; z-index: 20;
+  left: calc(var(--gutter) + env(safe-area-inset-left));
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  display: flex; flex-wrap: wrap; align-items: center; column-gap: 10px;
+  max-width: max(46vw, 620px);
+  color: var(--bone); mix-blend-mode: difference;
+  font: 300 10px/1.4 var(--mono); letter-spacing: .18em; text-transform: uppercase;
+}
+/* on the fog, difference would turn the blood REC cyan: plain ink instead. Not while travelling: the zone
+   flips under the black ink, where only difference reads (on the fog both render near-black, so the flip is invisible) */
+html[data-zone=above]:not(.is-leaving, .is-entering) .dock { mix-blend-mode: normal; color: var(--ink); }
+.dock [hidden] { display: none !important; }
+.dock p { margin: 0; }
+
+.dock button { text-transform: inherit; display: grid; place-items: center; flex: none; width: 28px; height: 28px; margin-inline: -8px; cursor: pointer; }
+.dock button:disabled { opacity: .3; cursor: default; }
+.dock .ico { display: block; width: 8px; height: 9px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+html:is([data-player=playing], [data-player=loading], [data-player=blocked]) .dock-play .ico {
+  clip-path: none; background: linear-gradient(90deg, currentColor 0 33%, transparent 33% 67%, currentColor 67%);
+}
+.dock-next .ico { width: 9px; clip-path: polygon(0 0, 70% 50%, 70% 0, 100% 0, 100% 100%, 70% 100%, 70% 50%, 0 100%); }
+
+.dock-meta { display: flex; align-items: center; flex: 1 1 0; min-width: 0; max-width: max-content; white-space: nowrap; }   /* shrinks, never wraps the line */
+.dock .rec { flex: none; width: 6px; height: 6px; margin-right: 9px; border-radius: 50%; background: currentColor; animation: dock-rec 1.6s steps(1) infinite; }
+html:is([data-player=loading], [data-player=blocked]) .dock .rec { animation-duration: .4s; }
+html[data-player=playing] .dock .rec { background: var(--blood); animation: none; }
+html:is([data-player=paused], [data-player=dead]) .dock .rec { animation: none; }
+html[data-player=dead] .dock .rec { opacity: .4; }
+@keyframes dock-rec { 50% { opacity: 0; } }
+
+.dock-state { flex: none; opacity: .66; }
+.dock-sl { flex: none; white-space: pre; opacity: .5; }
+.dock-what { display: flex; align-items: baseline; min-width: 0; }
+.dock-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* the title gives way; the credit stays */
+.dock-title[href]:hover { text-decoration: underline; text-underline-offset: 3px; }
+.dock-by { flex: none; opacity: .66; }
+.dock-time { flex: none; opacity: .66; font-variant-numeric: tabular-nums; }
+.dock-sc { flex: none; white-space: nowrap; padding-block: 7px; }
+.dock-sc:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* the seek range: a hairline with a 28px hit area and a 9px thumb */
+.dock-seek {
+  --p: 0;
+  flex: 1 0 100%; min-width: 320px; height: 28px; margin: 0;
+  -webkit-appearance: none; appearance: none; background: none; color: inherit; cursor: pointer;
+}
+.dock-seek::-webkit-slider-runnable-track { height: 1px; background: linear-gradient(90deg, currentColor calc(var(--p) * 100%), var(--seek-rest) 0); }
+.dock-seek::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 9px; height: 9px; margin-top: -4px; border: 0; border-radius: 50%; background: currentColor; }
+.dock-seek::-moz-range-track { height: 1px; background: var(--seek-rest); }
+.dock-seek::-moz-range-progress { height: 1px; background: currentColor; }
+.dock-seek::-moz-range-thumb { width: 9px; height: 9px; border: 0; border-radius: 50%; background: currentColor; }
+.dock-seek:focus-visible { outline: 1px solid currentColor; outline-offset: 0; }
+
+/* blocked: the widget itself is revealed as a card above the dock; one tap there plays */
+.dock-hint { position: fixed; left: calc(var(--gutter) + env(safe-area-inset-left)); bottom: calc(var(--sc-b) + 172px); max-width: calc(var(--sc-w) - 64px); white-space: normal; }
+.sc-close { position: fixed; bottom: calc(var(--sc-b) + 172px); left: calc(var(--gutter) + env(safe-area-inset-left) + var(--sc-w) - 64px); }
+.dock .sc-close { width: 64px; height: 44px; margin: 0; }
+.dock-hint:not(:empty) { display: flex; align-items: center; min-height: 44px; }   /* text level with the close */
+.sc-close:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+#sc { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; border: 0; opacity: 0; pointer-events: none; }
+#sc.show {
+  z-index: 25; left: calc(var(--gutter) + env(safe-area-inset-left)); bottom: var(--sc-b);
+  width: var(--sc-w); height: 166px; opacity: 1; pointer-events: auto;
+  background: var(--void); outline: 1px solid var(--line);
+}
+
+/* ---- hooks ---- */
+/* row progress (--p, .is-current) is drawn by the .row rules in components */
+
+/* weight meter: follow the level closely instead of the hover's slow ease */
+html [data-weight].is-meter { transition-duration: .12s; transition-timing-function: linear; }
+
+/* waveform scar (SVG built by player.js) */
+[data-wave] { position: relative; cursor: pointer; touch-action: manipulation; }
+[data-wave][hidden] { display: none; }
+[data-wave] svg { display: block; width: 100%; height: 64px; }
+.scar-base { fill: var(--ink-2); opacity: .5; }
+.scar-played { fill: var(--ink); }
+.scar-head { fill: var(--blood); opacity: 0; transition: opacity .3s; }
+html[data-player=playing] [data-wave].is-playing .scar-head { opacity: 1; }
+@media (hover: hover) {
+  [data-wave]::after {
+    content: ''; position: absolute; top: 0; bottom: 0; left: var(--hx, 0); width: 1px;
+    background: var(--ink); opacity: 0; transition: opacity .2s; pointer-events: none;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .mark, .marquee-track, .scroll-cue::after, .rec { animation: none; }
-    .ttl, .cap { transition: none; }
+  [data-wave]:hover::after { opacity: .45; }
+}
+
+/* ---- responsive: phones and any touch screen get the bar (44px targets), as the chrome does ---- */
+@media (max-width: 899px), (pointer: coarse) {
+  :root { --sc-b: calc(var(--dock-h) + 12px + env(safe-area-inset-bottom)); }
+  .dock {
+    left: calc(12px + env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom));
+    max-width: calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    flex-wrap: nowrap; column-gap: 0; height: 44px; padding-right: 18px; border-radius: 22px;
+    background: var(--dock-bg); color: var(--ink); mix-blend-mode: normal;
+    transition: color .8s ease, background-color .8s ease;
   }
+  .dock button { width: 44px; height: 44px; margin: 0; }
+  .dock:not(.is-full) { height: auto; min-height: 44px; }   /* the pill may take two lines (ended, dead) */
+  .dock:not(.is-full) .dock-meta { flex-wrap: wrap; padding-block: 7px; }
+  .dock-title { padding-block: 15px; margin-block: -15px; }   /* 44px to tap, same layout */
+  html:is([data-player=ended], [data-player=dead]) .dock-title { padding-block: 4px; margin-block: -4px; }   /* the two-line pill: stay inside it */
+  /* dead: [play] [● player blocked] [listen on / SoundCloud ↗], the link wraps beside the state */
+  html[data-player=dead] .dock-sl { display: none; }
+  html[data-player=dead] .dock-meta { flex: none; }
+  html[data-player=dead] .dock-sc { flex: 0 1 auto; width: min-content; min-width: 0; margin-left: 12px; white-space: normal; padding-block: 8px; }
+  /* a loaded track: full-width bar, [play] [title + time] [next] [↗], the range is its top edge */
+  .dock.is-full {
+    left: 0; right: 0; bottom: 0; max-width: none; border-radius: 0;
+    height: calc(var(--dock-h) + env(safe-area-inset-bottom));
+    padding: 0 calc(4px + env(safe-area-inset-right)) env(safe-area-inset-bottom) calc(4px + env(safe-area-inset-left));
+  }
+  .dock.is-full .dock-meta {
+    flex: 1 1 auto; max-width: none; display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; row-gap: 5px; padding-left: 4px;
+  }
+  .dock.is-full .dock-what { grid-column: 1 / -1; grid-row: 1; letter-spacing: .02em; }
+  .dock.is-full .dock-title { font: 700 17px/1 var(--tall); padding: 10px 0 17px; margin: -10px 0 -17px; }   /* hit area from the bar's edge down */
+  /* the range's hit area straddles the bar's top edge; inside the bar the controls win */
+  .dock.is-full :is(.dock-play, .dock-next, .dock-sc, .dock-title) { position: relative; z-index: 1; }
+  .dock.is-full .dock-by { font-size: 9px; letter-spacing: .18em; }
+  .dock.is-full .dock-sl { display: none; }
+  .dock.is-full .dock-state, .dock.is-full .dock-time { font-size: 9px; }
+  .dock.is-full .dock-sc { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; font-size: 14px; }
+  .dock.is-full .dock-sc-t {
+    position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+  .dock-seek { position: absolute; left: 0; right: 0; top: -14px; width: 100%; min-width: 0; }
+  .dock-seek::-webkit-slider-runnable-track { height: 2px; }
+  .dock-seek::-moz-range-track, .dock-seek::-moz-range-progress { height: 2px; }
+  .dock-seek::-webkit-slider-thumb { margin-top: -3.5px; }
+  .dock-hint:not(:empty), .dock .sc-close { padding: 6px 10px; background: var(--dock-bg); }
+}
+
+/* ---- preferences ---- */
+@media (prefers-reduced-motion: no-preference) {
+  #sc.show { animation: sc-in .5s var(--ease-out) both; }
+  @keyframes sc-in { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dock .rec { animation: none !important; }
+  .dock, .scar-head { transition: none; }
+}
+@media (prefers-contrast: more) {
+  .dock { mix-blend-mode: normal; color: var(--ink); }
+  .dock-state, .dock-by, .dock-time, .dock-sl { opacity: 1; }
+  .scar-base { opacity: 1; }
+}
+@media (forced-colors: active) {
+  .dock { mix-blend-mode: normal; }
+  .dock .ico, .dock .rec { forced-color-adjust: none; color: CanvasText; }
+  html[data-player=playing] .dock .rec { background: Highlight; }
+  .scar-base, .scar-played, .scar-head { fill: CanvasText; }
+}
+
+/* ========== 4. components ========== */
+/* --paper: the ground an inverted control sits on (void below, fog above) */
+:root { --paper: var(--void); }
+html[data-zone=above] { --paper: var(--fog); }
+
+/* full bleed: span the viewport from its left edge, cancelling #page's left padding (gutter or notch) */
+.slit, .marquee, .hero { width: 100vw; max-width: none; margin-left: calc(-1 * var(--pad-l)); margin-right: 0; }
+
+/* small type over the sky carries its own dark ground (--halo, none on the fog); display type holds up on its own */
+.sec-label, .row :is(.n, .idx, .meta, .cap, .go), .btn, .play.big, .door:not(.big), .spec, .plate figcaption,
+.heard figcaption, .big-links span { text-shadow: var(--halo); }
+
+/* inline links and redactions: a 44px tap target without moving the line (padding would drop their underline) */
+:is(.spec a, .heard figcaption a, .redact) { position: relative; }
+:is(.spec a, .heard figcaption a, .redact)::after {
+  content: ""; position: absolute; left: -4px; right: -4px; top: 50%; height: 44px; translate: 0 -50%;
+}
+
+/* ---------- section label: mono caps over a hairline ---------- */
+.sec-label {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px;
+  padding-bottom: 14px; border-bottom: 1px solid var(--line);
+  font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: var(--ink-2);
+}
+.sec-label h2 { margin: 0; font: inherit; color: var(--ink); }
+/* "5 · 16:34" sits dead centre, over the brightest part of every cover, and is mostly gaps: the items get a ground */
+.sec-label > * { background: var(--ground); box-shadow: 0 0 14px 8px var(--ground); transition: background-color 1.2s, box-shadow 1.2s; }
+html.emptied .sec-label > * { background: transparent; box-shadow: none; }   /* site's "empty": only hairlines and sky stay */
+
+/* ---------- track rows: button + full-row link as siblings, never nested ---------- */
+.tracks { list-style: none; margin: 0; padding: 0; }
+.row {
+  position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 20px;
+  align-items: center; padding: 10px 0 12px; border-bottom: 1px solid var(--line);
+}
+.row .ttl {
+  grid-column: 2; grid-row: 1; justify-self: start;
+  font-family: var(--tall); font-weight: 150; text-transform: uppercase;
+  font-size: clamp(46px, 10.5vw, 150px); line-height: .88; letter-spacing: -.005em;
+  overflow-wrap: anywhere;
+  transition: font-weight .6s var(--ease-out), letter-spacing .6s var(--ease-out);
+}
+.row .ttl::after { content: ""; position: absolute; inset: 0; }        /* the whole row is the link */
+.row .ttl:focus-visible { outline: none; }
+.row .ttl:focus-visible::after { outline: 1px solid currentColor; outline-offset: 2px; }
+
+.row .idx, .row .n {
+  grid-column: 1; grid-row: 1; align-self: start; width: 44px; height: 44px; padding-top: 1.3em;
+  font-size: 10px; letter-spacing: .1em; color: var(--ink-2);
+}
+/* the number sits under its button, not in it, so it survives no-JS (where play buttons are hidden) */
+.row .idx { position: relative; z-index: 1; display: grid; place-items: start; }
+.row .n { transition: opacity .25s; }
+.idx::before { content: "\25B6\FE0E"; content: "\25B6\FE0E" / ""; opacity: 0; color: var(--ink); transition: opacity .25s, color .25s; }
+.idx[aria-pressed=true] + .n { opacity: 0; }
+.idx[aria-pressed=true]::before { content: "\25A0"; content: "\25A0" / ""; color: var(--blood); opacity: 1; }
+.idx:focus-visible { outline-offset: -2px; }
+
+.row .meta {
+  grid-column: 3; grid-row: 1; display: grid; justify-items: end; gap: 4px;
+  font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-2); text-align: right;
+}
+.row .cap {
+  grid-column: 2 / -1; font-size: 13px; letter-spacing: .06em; color: var(--ink);
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height .5s ease, opacity .5s ease, margin .5s ease;
+}
+.row .cap::before { content: "— "; color: var(--ink-2); }
+.row .go {
+  position: absolute; right: 0; bottom: 14px; pointer-events: none;
+  font-size: 10px; letter-spacing: .3em; opacity: 0; transition: opacity .4s;
+}
+/* lit: site's .on (hover preview, touch centring), keyboard focus, and :hover only where hovering is real.
+   a tap's focus or sticky :hover would light a second row next to the centred one */
+.row:is(.on, :has(:focus-visible)) .ttl { font-weight: 800; letter-spacing: .01em; }
+.row:is(.on, :has(:focus-visible)) .cap { max-height: 3em; opacity: 1; margin-top: 8px; }
+.row:is(.on, :has(:focus-visible)) .go, .row:is(.on, :has(:focus-visible)) .idx::before { opacity: 1; }
+.row:is(.on, :has(:focus-visible)) .n { opacity: 0; }
+@media (hover: hover) {
+  .row:hover .ttl { font-weight: 800; letter-spacing: .01em; }
+  .row:hover .cap { max-height: 3em; opacity: 1; margin-top: 8px; }
+  .row:hover .go, .row:hover .idx::before { opacity: 1; }
+  .row:hover .n { opacity: 0; }
+}
+html.no-js .row .n { opacity: 1; }   /* no play button to swap in */
+
+/* progress hairline over the bottom rule, with a nib at the playhead (blood only while playing) */
+.row::before, .row::after { content: ""; position: absolute; bottom: -1px; pointer-events: none; background: var(--ink); }
+.row::before { left: 0; right: 0; height: 1px; transform: scaleX(var(--p, 0)); transform-origin: left; }
+.row::after { left: calc(var(--p, 0) * 100%); bottom: -6px; width: 1px; height: 11px; opacity: 0; }
+.row.is-current::after { opacity: 1; }
+.row.is-playing::after { background: var(--blood); }
+
+/* compact: one line (album page) */
+.row.compact { padding: 4px 0 6px; }
+.row.compact .ttl { font-size: clamp(30px, 3.6vw, 52px); line-height: .95; }
+.row.compact :is(.idx, .n) { padding-top: .9em; }
+
+/* ---------- buttons ---------- */
+.btn, .play.big {
+  display: inline-flex; align-items: center; justify-content: center; gap: 14px;
+  min-height: 52px; padding: 0 calc(26px - .35em) 0 26px; border: 1px solid var(--ink);
+  font-size: 11px; letter-spacing: .35em; text-transform: uppercase; color: var(--ink);
+  transition: background-color .35s, color .35s;
+}
+.btn:is(:hover, :focus-visible), .play.big:is(:hover, :focus-visible) { background-color: var(--ink); color: var(--paper); text-shadow: none; }
+.play.big { padding-left: 22px; }
+.play.big::before { content: "\25B6\FE0E"; content: "\25B6\FE0E" / ""; font-size: 12px; letter-spacing: 0; }
+.play.big[aria-pressed=true]::before { content: "\25A0"; content: "\25A0" / ""; color: var(--blood); }
+.play.big .on-pause, .play.big[aria-pressed=true] .on-play { display: none; }
+.play.big[aria-pressed=true] .on-pause { display: inline; }
+
+/* ---------- doors: small mono links between depths ---------- */
+.door {
+  display: inline-flex; align-items: center; gap: 16px; min-height: 44px;
+  font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: var(--ink);
+}
+.door::after { content: ""; width: 32px; height: 1px; background: currentColor; transition: width .5s var(--ease-io); }
+.door:is(:hover, :focus-visible)::after { width: 80px; }
+
+/* big doors: hollow Big Shoulders that fills when you reach for it */
+.doors { border-top: 1px solid var(--line); }
+.doors a, .door.big {
+  display: flex; align-items: center; gap: 0; min-height: 64px; padding-block: 16px 12px;
+  border-bottom: 1px solid var(--line);
+  font: 900 clamp(34px, 7vw, 104px)/.9 var(--tall); letter-spacing: 0; text-transform: uppercase;
+  color: transparent; -webkit-text-stroke: 1px var(--ink);
+  transition: color .45s var(--ease-out);
+}
+.door.big::after { display: none; }
+.doors a:is(:hover, :focus-visible), .door.big:is(:hover, :focus-visible) { color: var(--ink); }
+.doors .dn { justify-content: flex-end; text-align: right; }
+
+/* ---------- dossier / spec sheet ---------- */
+.spec {
+  margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 32px;
+  border-top: 1px solid var(--line);
+}
+.spec > div {
+  grid-column: 1 / -1; display: grid; align-items: baseline;
+  grid-template-columns: 11em minmax(0, 1fr); grid-template-columns: subgrid;
+  padding-block: 11px 10px; border-bottom: 1px solid var(--line);
+}
+.spec dt { font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-2); }
+.spec dd { margin: 0; font-size: 13px; letter-spacing: .04em; color: var(--ink); overflow-wrap: anywhere; }
+.spec :is(time, [data-ago]) { white-space: nowrap; }
+.spec a { border-bottom: 1px solid var(--line); transition: border-color .3s; }
+.spec a:is(:hover, :focus-visible) { border-color: currentColor; }
+
+/* ---------- redaction (P2-6): the text is always in the DOM; a tap or hover lifts the bar ---------- */
+.redact {
+  background: var(--ink); color: transparent; text-shadow: none;   /* a halo would trace the hidden words */
+  -webkit-box-decoration-break: clone; box-decoration-break: clone; padding: 0 .3em;
+  cursor: default; transition: background .25s, color .25s;
+}
+.redact:is(:hover, :focus) { background: transparent; color: var(--ink); text-shadow: inherit; }
+@media (hover: none) { .redact { cursor: pointer; } }
+
+/* ---------- plate: the only ungraded cover on the site ---------- */
+.plate { margin: 0; padding: 10px; }
+.plate img {
+  width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; background: var(--void);
+  outline: 1px solid var(--line); outline-offset: 9px;
+}
+.plate figcaption {
+  margin-top: 26px; font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: var(--ink-2);
+}
+.plate .credit { display: block; margin-top: 8px; font-size: 11px; letter-spacing: .04em; text-transform: none; color: var(--ink); }
+
+/* ---------- slit: full-bleed letterbox of the crying eye ---------- */
+.slit { height: clamp(64px, 9vw, 130px); overflow: hidden; }
+.slit img { width: 100%; height: 100%; object-fit: cover; object-position: 22% 15%; }   /* the iris sits 22% down the banner */
+
+/* ---------- marquee ---------- */
+.marquee { overflow: hidden; padding-block: 18px; border-block: 1px solid var(--line); }
+.marquee-track { display: flex; width: max-content; animation: slide 38s linear infinite; will-change: transform; }
+.marquee span {
+  padding-right: .4em; white-space: nowrap;
+  font: 900 clamp(64px, 13vw, 190px)/.9 var(--tall); text-transform: uppercase;
+  color: transparent; -webkit-text-stroke: 1px var(--ink);
+}
+.marquee span:nth-child(3n+2) { color: var(--ink); -webkit-text-stroke: 0; }
+@keyframes slide { to { transform: translateX(-50%); } }
+
+/* ---------- heard: the only two comments we can quote ---------- */
+.heard { display: flex; flex-wrap: wrap; justify-content: center; gap: 8vh 12vw; }
+.heard figure { margin: 0; }
+.heard blockquote { margin: 0; font: 400 clamp(34px, 4.4vw, 64px)/1 var(--gothic); color: var(--ink); }
+.heard figcaption { margin-top: 10px; font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: var(--ink-2); }
+.heard figcaption a { color: var(--ink); border-bottom: 1px solid var(--line); }
+.heard figure:nth-child(2) { translate: 0 6vh; }
+
+/* ---------- big links: >=64px tap rows that flood with ink ---------- */
+.big-links { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.big-links li { border-bottom: 1px solid var(--line); }
+.big-links :is(a, button) {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px;
+  width: 100%; min-height: 64px; padding: 18px 0 14px; text-align: left; color: var(--ink);
+  background: linear-gradient(var(--ink), var(--ink)) no-repeat 0 0 / 0 100%;
+  transition: background-size .55s var(--ease-io), color .35s, padding .55s var(--ease-io);
+}
+.big-links b { font: 800 clamp(40px, 7vw, 104px)/.86 var(--tall); text-transform: uppercase; }
+.big-links span { font-size: 11px; letter-spacing: .2em; color: var(--ink-2); transition: color .35s; }
+.big-links :is(a, button):is(:hover, :focus-visible) { background-size: 100% 100%; color: var(--paper); padding-inline: 20px; }
+.big-links :is(a, button):is(:hover, :focus-visible) span { color: var(--paper); text-shadow: none; }
+.big-links [aria-pressed=true] > span::before { content: "\25A0\00a0\00a0"; content: "\25A0\00a0\00a0" / ""; color: var(--blood); }
+.big-links i { font-style: normal; }
+.big-links [aria-pressed=true] > span i { display: none; }   /* one state glyph: the stop replaces the play */
+
+@media (max-width: 720px) {
+  .row { grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; }
+  /* 10.5vw all the way down: MYLITTLESOLDIER at 800 needs ~6.2em, which a 46px floor overflows below 438px */
+  .row .ttl { grid-column: 1; font-size: clamp(34px, 10.5vw, 150px); }
+  .row .meta { grid-column: 2; align-self: start; padding-top: .6em; }
+  .row .cap { grid-column: 1; grid-row: 2; }
+  .row .idx, .row .n { grid-column: 2; grid-row: 2; justify-self: end; place-items: center; padding: 0 0 0 2px; font-size: 11px; }
+  .row .idx { border-radius: 50%; box-shadow: inset 0 0 0 1px var(--line); }
+  .row .n { display: grid; }
+  html.js .row .n { visibility: hidden; }   /* the always-on play takes its place; without JS the number stays */
+  .row .idx::before { opacity: 1; }
+  .row .go { display: none; }
+  .row.compact { grid-template-columns: minmax(0, 1fr) auto 44px; }
+  .row.compact :is(.idx, .n) { grid-column: 3; grid-row: 1; align-self: center; padding: 0 0 0 2px; }   /* drop the desktop .9em top pad: the ▶ sits centred in the ring */
+  .row.compact .meta { align-self: center; padding-top: 0; }
+  .spec { column-gap: 20px; }
+  .big-links :is(a, button) { flex-direction: column; align-items: flex-start; }
+  .plate img { outline-offset: 6px; }
+  .heard figure:nth-child(2) { translate: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+  .row .ttl, .row .cap, .row .go, .row .n, .idx::before, .door::after, .doors a, .door.big,
+  .btn, .play.big, .redact, .big-links :is(a, button), .big-links span, .sec-label > * { transition: none; }
+}
+@media (forced-colors: active) {
+  .row::before, .row::after { forced-color-adjust: none; background: CanvasText; }
+  .doors a, .door.big, .marquee span { color: CanvasText; }
+}
+
+/* ========== 5. pages ========== */
+#page:is([data-page=album], [data-page=room], [data-page=links]) {
+  --page-top: calc(clamp(84px, 13vh, 140px) + env(safe-area-inset-top));
+  padding-top: var(--page-top); padding-bottom: 10vh;
+}
+.album-head, .album-grid, .room-head, .room-play, .room-grid, .doors, .links-head, .big-links, .floor, .credits,
+.released, .album-body, .heard { max-width: 1320px; margin-inline: auto; }
+.room-head, .room-play, .room-grid, .doors, .album-head, .album-grid, .links-head, .big-links, .floor { width: 100%; }
+#page:not([data-page=nosignal]) > .door:not(.big), .fold > .door { margin-left: max(0px, (100% - 1320px) / 2); }   /* line up with the centred column on wide screens */
+
+/* small type over the sky gets the halo (see components); the typed caption's untyped rest must stay invisible */
+.under, .scroll-cue, .album-body p, .room-cap, .room-acts .out, .links-head p, .clock-geo, .clock-night, .ns-sub { text-shadow: var(--halo); }
+[data-type] .rest { text-shadow: none; }
+
+/* the first fold (album: title + slit; room: door, title, play) fills the first screen, so the bottom band where
+   the dock and the corner sit is empty at rest and the dossier / plate start below it */
+@media (min-width: 900px) { .fold { min-height: calc(100svh - var(--page-top)); } }
+
+/* ---------- home: the hero (Exhale) ----------
+   base = the DOM wordmark (no WebGL, reduced motion keeps GL but still). js/hero.js paints it in GL, then breathes it out as ash */
+.hero { position: relative; }
+.hero-pin {
+  position: relative; min-height: 100vh; min-height: 100svh;
+  display: grid; place-items: center; place-content: center; text-align: center;
+  padding: 96px var(--pad-r) 136px var(--pad-l);
+}
+.mark { margin: 0; color: var(--ink); white-space: nowrap; font: 400 clamp(48px, 17vw, 250px)/.9 var(--gothic); letter-spacing: -.01em; }
+.under {   /* the · separators are items of their own, so a narrow screen can drop them instead of stranding one */
+  margin-top: 26px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px;
+  padding: 14px 0 14px .5em; font-size: 10px; letter-spacing: .5em; text-transform: uppercase; color: var(--ink);
+}
+.under em, .under .sep { font-style: normal; color: var(--ink-2); }
+.under > * { transition: color .4s; }
+.under:is(:hover, :focus-visible) em { color: var(--ink); }
+.scroll-cue {
+  position: absolute; left: 50%; bottom: calc(36px + env(safe-area-inset-bottom)); translate: -50% 0;
+  display: grid; justify-items: center; gap: 10px; padding: 10px 10px 0 calc(10px + .4em);
+  font-size: 9px; letter-spacing: .4em; text-transform: uppercase; color: var(--ink-2);
+}
+.scroll-cue::after {
+  content: ""; width: 1px; height: 38px; background: linear-gradient(currentColor, transparent);
+  transform-origin: top; animation: drip 2.4s ease-in-out infinite;
+}
+@keyframes drip { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+
+/* WebGL layer: absolute in document space, so the GL wordmark scrolls on the compositor with the DOM */
+.hero-canvas { position: absolute; left: 0; top: 0; z-index: -1; display: block; pointer-events: none; contain: strict; }
+/* GL is painting: the real h1 stays in the DOM and the a11y tree */
+.hero-gl .mark { color: transparent; }
+/* the settled ash becomes this hairline; its text surfaces with it. --hero-hand (0..1) is written only mid-handoff */
+.hero-handoff { position: relative; border-bottom-color: transparent !important; }
+.hero-handoff > * { opacity: var(--hero-hand, 1); transform: translateY(calc((1 - var(--hero-hand, 1)) * 6px)); }
+.hero-handoff::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: var(--line); opacity: var(--hero-hand, 1);
+}
+[data-hero-under], [data-hero-cue] { will-change: transform, opacity; }
+
+/* ---------- home: released, album strip, heard, floor door ---------- */
+.released { padding-block: 18vh 12vh; }
+.album { padding-block: 16vh 8vh; }
+.album-body {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 40px; align-items: end; padding-top: 56px;
+}
+.album-body p { margin: 0; max-width: 44ch; font-size: 13px; }
+.soon { margin: 0 0 14px; font: 400 clamp(44px, 6vw, 84px)/1 var(--gothic); }
+.album-acts { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px 36px; }
+.heard { padding-block: 12vh 18vh; }
+.heard blockquote { font-size: clamp(40px, 5.2vw, 84px); }
+.floor-door { max-width: 1320px; margin: 0 auto 12vh; border-top: 1px solid var(--line); justify-content: center; }
+
+/* ---------- album: the white-out (zone tokens do the colour) ---------- */
+.album-head { padding-top: 7vh; }
+.album-ttl {
+  margin: 0 0 0 -.02em; white-space: nowrap;
+  font: 400 min(14vw, (100vw - 2 * var(--gutter)) * .155, 220px)/.95 var(--gothic); letter-spacing: -.01em;
+}
+.album-sub { margin: 20px 0 0; font-size: 12px; letter-spacing: .3em; color: var(--ink); }
+.slit { margin-top: 8vh; }
+.album-grid {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 72px 7vw; align-items: start;
+  margin-top: 11vh;
+}
+.dossier { border-top-color: var(--ink); }
+.dossier dd { font-size: 14px; }
+.below .note { margin: 18px 0 0; font-size: 11px; letter-spacing: .04em; color: var(--ink-2); }
+.uploads { margin-top: 56px; }
+.follow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 56px; }
+.follow h2 {
+  flex-basis: 100%; margin: 0 0 6px;
+  font: inherit; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: var(--ink-2);
+}
+[data-page=album] > .door { margin-top: 14vh; }
+
+/* ---------- song rooms ---------- */
+.room-head { position: relative; margin-top: 9vh; }
+.room-n {
+  position: absolute; z-index: -1; right: -.04em; top: 50%; translate: 0 -52%;
+  font: 800 40vw/.8 var(--tall); letter-spacing: -.02em;
+  color: transparent; pointer-events: none; user-select: none;
+  -webkit-text-stroke: 1px var(--line); -webkit-text-stroke: 1px color-mix(in srgb, var(--ink) 26%, transparent);
+}
+.room-ttl {
+  margin: 0 0 0 -.03em; white-space: nowrap;
+  font: 800 clamp(40px, 14vw, 220px)/.84 var(--tall); text-transform: uppercase; letter-spacing: -.01em;
+  transition: font-weight .6s var(--ease-out);   /* the player's .is-meter tightens this while playing */
+}
+.room-cap { margin: 24px 0 0; max-width: 60ch; font-size: clamp(13px, 1.4vw, 17px); letter-spacing: .04em; }
+.room-play { margin-top: 7vh; }
+.room-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 36px; }
+.room-acts .out {
+  display: inline-flex; align-items: center; min-height: 44px;
+  font-size: 10px; letter-spacing: .3em; text-transform: uppercase;
+  background: linear-gradient(currentColor, currentColor) no-repeat 0 calc(100% - 10px) / 100% 1px;
+}
+.room-play .scar { margin-top: 44px; }
+.room-grid {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 460px); gap: 72px 8vw; align-items: end;
+  margin-top: 13vh;
+}
+.room-grid .plate { width: 100%; }
+[data-page=room] .heard { padding-block: 16vh 6vh; }
+.doors { margin-top: 16vh; }
+
+/* ---------- links: the floor ---------- */
+.links-head { margin-top: 7vh; }
+.links-head h1 {
+  margin: 0 0 0 -.03em; font: 150 clamp(96px, 28vw, 340px)/.78 var(--tall); text-transform: uppercase; letter-spacing: -.01em;
+}
+.links-head p { margin: 22px 0 0; font-size: 12px; letter-spacing: .3em; }
+.big-links { margin-top: 9vh; }
+.floor {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 72px 7vw; align-items: end;
+  margin-top: 14vh;
+}
+.clock-t {
+  margin: 0 0 0 -.03em; font: 100 clamp(72px, 13vw, 190px)/.8 var(--tall); font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em; text-transform: uppercase;
+}
+.clock-t:empty { display: none; }
+.clock-geo, .clock-night { margin: 18px 0 0; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: var(--ink-2); }
+.clock-night { margin-top: 6px; color: var(--ink); }
+
+/* ---------- 404: no signal ---------- */
+#page[data-page=nosignal] {
+  min-height: 100vh; min-height: 100svh; display: grid; place-content: center; justify-items: center; gap: 18px;
+  padding-block: 120px; text-align: center;
+}
+.ns-ttl { margin: 0; font: 400 clamp(64px, 20vw, 230px)/.9 var(--gothic); white-space: nowrap; }
+.ns-sub { margin: 0; font-size: 12px; letter-spacing: .3em; }
+[data-page=nosignal] .door { margin-top: 28px; }
+
+@media (max-width: 720px) {
+  .hero-pin { padding-bottom: 150px; }
+  .under { gap: 6px 9px; letter-spacing: .34em; padding-left: .34em; }
+  .scroll-cue { bottom: calc(var(--dock-h) + 40px + env(safe-area-inset-bottom)); }
+  .released { padding-top: 12vh; }
+  .album-body { grid-template-columns: minmax(0, 1fr); }
+  .album-acts { justify-content: flex-start; }
+  .album-grid, .room-grid, .floor { grid-template-columns: minmax(0, 1fr); }
+  .room-grid .plate { max-width: 420px; }
+  .credits .spec { grid-template-columns: minmax(0, 1fr); }
+  .credits .spec > div { row-gap: 4px; }
+  .heard { gap: 6vh 14vw; }
+}
+@media (max-width: 374px) { .under .sep { display: none; } }
+/* phone landscape: the vh rhythm and a width-sized title push the room's play under the dock. tighten the fold */
+@media (max-height: 500px) {
+  #page[data-page=room] { --page-top: calc(64px + env(safe-area-inset-top)); }
+  .room-head { margin-top: 0; }
+  .room-ttl { font-size: clamp(40px, min(14vw, 22svh), 220px); }
+  .room-cap { margin-top: 12px; }
+  .room-play { margin-top: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mark, .scroll-cue::after { animation: none; }
+  .under > *, .room-ttl { transition: none; }
+}
+
+/* ========== 6. motion: travel (leave / enter), title morph, receiving ========== */
+/* only the morphing title is ever captured; the canvas and chrome keep rendering live */
+:root { view-transition-name: none; }
+#page:focus, #page [tabindex="-1"]:focus { outline: none; }   /* the router focuses #page, the h1 or the #target: no ring */
+html[data-zone=above] { --enter-hold: 250ms; }   /* album text waits for the white-out (5.5) */
+
+/* P2-11: the fetch is still out after the ink peaked */
+.recv {
+  position: fixed; left: 50%; top: 50%; z-index: 16; margin: 0;
+  display: flex; align-items: center; gap: 10px;
+  translate: -50% -50%;
+  font: 400 10px/1 var(--mono); letter-spacing: .22em; text-transform: uppercase;
+  color: var(--bone); mix-blend-mode: difference;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity .3s, visibility 0s .3s;
+}
+.recv i { width: 7px; height: 7px; border-radius: 50%; background: var(--bone); }
+html[data-player=playing] .recv i { background: var(--blood); }
+html.is-receiving .recv { opacity: 1; visibility: visible; transition: opacity .3s; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* leave: 0-280ms, the page sinks away (rises going up) */
+  html.is-leaving:not(.is-morph) #page, html.is-leaving .foot {
+    opacity: 0; translate: 0 -3vh; transition: opacity .28s ease-in, translate .28s ease-in;
+  }
+  html[data-travel=up].is-leaving:not(.is-morph) #page, html[data-travel=up].is-leaving .foot { translate: 0 3vh; }
+
+  /* P2-4: everything but the title fades; the title stays lit, even over the CSS ink (and bone on the album's fog) */
+  html.is-morph.is-leaving #page { z-index: 16; }
+  html.is-morph #page .fade-out { opacity: 0; transition: opacity .28s ease-in; }   /* #page: beats a row's :hover reveal */
+  html.is-morph.is-leaving #page :has(> .fade-out) { border-color: transparent; transition: border-color .28s ease-in; }
+  html.is-morph.is-leaving #page :has(> .fade-out)::before,
+  html.is-morph.is-leaving #page :has(> .fade-out)::after { opacity: 0; }
+  html.is-morph.is-leaving .row .ttl { color: var(--bone); transition: color .3s ease-in; }
+  html.is-morph:not(.is-leaving) #page h1 { width: fit-content; animation: none; }   /* a text-tight box morphs cleanly */
+  ::view-transition-group(ttl), ::view-transition-old(ttl), ::view-transition-new(ttl) {
+    animation-duration: .7s; animation-timing-function: cubic-bezier(.7,0,.2,1);
+  }
+  ::view-transition-old(ttl), ::view-transition-new(ttl) { height: 100%; }   /* both words span the flying box */
+
+  /* enter: 600ms, 40ms steps. translate adds to whatever the element already has */
+  html.is-entering #page > * {
+    animation: es-fade .6s var(--ease-out) both, es-rise .6s var(--ease-out) both;
+    animation-composition: replace, add;
+    animation-delay: var(--enter-hold, 0ms);
+  }
+  html[data-travel=up].is-entering #page > * { animation-name: es-fade, es-sink; }
+  html.is-entering #page > :nth-child(2) { animation-delay: calc(40ms + var(--enter-hold, 0ms)); }
+  html.is-entering #page > :nth-child(3) { animation-delay: calc(80ms + var(--enter-hold, 0ms)); }
+  html.is-entering #page > :nth-child(4) { animation-delay: calc(120ms + var(--enter-hold, 0ms)); }
+  html.is-entering #page > :nth-child(5) { animation-delay: calc(160ms + var(--enter-hold, 0ms)); }
+  html.is-entering #page > :nth-child(n+6) { animation-delay: calc(200ms + var(--enter-hold, 0ms)); }
+  html.is-entering #page > .fold { animation: none; }
+  html.is-entering #page > .fold > * {
+    animation: es-fade .6s var(--ease-out) both, es-rise .6s var(--ease-out) both;
+    animation-composition: replace, add;
+    animation-delay: var(--enter-hold, 0ms);
+  }
+  html[data-travel=up].is-entering #page > .fold > * { animation-name: es-fade, es-sink; }
+  html.is-entering #page > .fold > :nth-child(2) { animation-delay: calc(40ms + var(--enter-hold, 0ms)); }
+  html.is-entering #page > .fold > :nth-child(n+3) { animation-delay: calc(80ms + var(--enter-hold, 0ms)); }
+  html.is-entering .foot { animation: es-fade .6s var(--ease-out) 200ms both; }
+
+  html.is-receiving .recv i { animation: es-blink .8s steps(1) infinite; }
+}
+@keyframes es-fade { from { opacity: 0; } }
+@keyframes es-rise { from { translate: 0 3vh; } }
+@keyframes es-sink { from { translate: 0 -3vh; } }
+@keyframes es-blink { 50% { opacity: 0; } }
+
+/* reduced motion: a 150ms opacity swap. no ink, no stagger, no morph */
+@media (prefers-reduced-motion: reduce) {
+  html:is(.is-leaving, .is-entering) :is(#page, .foot) { transition: opacity .15s; }
+  html.is-leaving :is(#page, .foot) { opacity: 0; }
+}
+@media (prefers-contrast: more) { .recv { mix-blend-mode: normal; } }
+@media (forced-colors: active) { .recv { mix-blend-mode: normal; } .recv i { background: CanvasText; } }
